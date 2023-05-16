@@ -1,11 +1,8 @@
 # code_#5 基于边缘的分割算法
- 
-import os
+ import os
 import cv2
-from PIL import Image
 import numpy as np
 import pandas as pd
-
 
 def edge_based_segmentation(img):
     # 转换为灰度图像
@@ -20,12 +17,15 @@ def edge_based_segmentation(img):
 
     # 找到轮廓并绘制矩形框
     contours, hierarchy = cv2.findContours(dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    bounding_boxes = []
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
         if w*h > 50:  # 忽略面积较小的矩形框
+            bounding_boxes.append((x, y, w, h))
             cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 255), 2)
 
-    return img
+    return img, bounding_boxes
 
 
 def process_images(file_path, file_path2):
@@ -37,27 +37,35 @@ def process_images(file_path, file_path2):
             img_name = os.path.splitext(file)[0]
             new_img_name = img_name + '_method_2.jpg'
             new_img_path = os.path.join(file_path2, new_img_name)
-            new_img = edge_based_segmentation(img)
+            new_img, bounding_boxes = edge_based_segmentation(img)
             cv2.imwrite(new_img_path, new_img)
 
             # 计算平均RGB值和绿色部分像素数量
-            image = Image.open(new_img_path)
-            image_array = np.array(image)
-            green_mask = np.all(image_array == [0, 255, 0], axis=-1) | np.all(image_array == [128, 255, 0], axis=-1)
-            green_pixels = np.sum(green_mask)
-            green_mean = np.mean(image_array[green_mask], axis=0)
+            for bbox in bounding_boxes:
+                x, y, w, h = bbox
+                roi = img[y:y+h, x:x+w]
+                hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+                lower_green = np.array([25, 52, 72])
+                upper_green = np.array([102, 255, 255])
+                mask = cv2.inRange(hsv, lower_green, upper_green)
+                green_pixels = cv2.countNonZero(mask)
+                avg_rgb = np.mean(roi[np.where(mask != 0)], axis=0)
 
-            data_dict[img_name] = {'mean_rgb': green_mean.tolist(), 'green_pixels': green_pixels}
+                data_dict[img_name + f"_bbox{bbox}"] = [avg_rgb[0], avg_rgb[1], avg_rgb[2], green_pixels]
 
     # 将结果保存为Excel文件
     df = pd.DataFrame.from_dict(data_dict, orient='index')
     df.to_excel(os.path.join(file_path2, 'results.xlsx'))
 
 
-# 测试
-file_path = ''  #文件输入路径
-file_path2 = 'D:\\desktop\\Fredrik\\Supplemental_Data_Set_2\\method_#3_edge\\B_TAP'  #文件输出路径
-process_images(file_path, file_path2)
+
+
+if __name__ == '__main__':
+    file_path = ''  #数据输入路径
+    file_path2 = ''  #数据输出路径
+    process_images(file_path, file_path2)
+
+
 
 
 # code_#4 基于阈值的分割算法
