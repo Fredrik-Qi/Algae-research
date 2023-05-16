@@ -214,7 +214,7 @@ import pandas as pd
 df = pd.DataFrame.from_dict(results, orient='index', columns=['mean', 'pixel_count'])
 
 # 将DataFrame写入Excel文件
-output_xlsx_file = "B_TAP_output.xlsx"
+output_xlsx_file = "output.xlsx"
 df.to_excel(os.path.join(output_folder+output_xlsx_file))
 
     
