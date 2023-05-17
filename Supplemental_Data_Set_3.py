@@ -230,4 +230,140 @@ for dir_name in os.listdir(folder_path):
             print("Mutual best hits complete")
         analyze_files()
 
+        
+# code_#8 Correlation of Evolution
+#1）生成成对的相关系数
+#2）基于相关系数的分布绘制柱状图
+#3）绘制相关系数矩阵
+
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# 读取excel文件
+df = pd.read_excel('')
+
+# 计算相关系数矩阵
+corr_matrix = df.corr(method='pearson')
+
+# 生成相关系数表格并保存到新的excel文件中
+corr_matrix.to_excel('')
+
+# 将相关系数矩阵转化为长格式数据
+corr_matrix = corr_matrix.stack().reset_index()
+corr_matrix.columns = ['variable_1', 'variable_2', 'correlation']
+corr_matrix.to_excel('')
+
+
+# 绘制柱状图
+sns.histplot(data=corr_matrix, x='correlation', bins=200)
+plt.xlabel('Correlation')
+plt.ylabel('Count')
+plt.title('Distribution of Correlations')
+plt.show()
+
+
+#筛选相关系数表格并保存到新文件中
+df = corr_matrix
+print(df)
+df[(df > -0.8) & (df < 0.8)] = 0
+df.to_excel('')
+
+
+# code_#9 基因表达数据的相关系数矩阵（R语言）
+install.packages("ggplot2")
+install.packages("corrplot")
+install.packages("readxl")
+library(corrplot)
+library(ggplot2)
+library(readxl)
+df <- read_excel("", sheet = "")
+puredata <- apply(df, 2, as.numeric)  
+#apply 函数是一种非常通用的数据处理函数，可以对数组、矩阵和列表等对象进行操作。
+#第二个参数是指定处理数据的维度， 2表示按照列进行处理，1表示按行进行处理;该函数将导入的数据转化为数值型
+cor_data <- cor(puredata)  #使用cor函数计算相关矩阵
+
+#定义圈出的cluster，以及圈出线的颜色和线条
+#diag = FALSE 剔除对角线的值；lwd为矩形框的线宽；addrect为矩形框数量
+#tl.pos为标签的位置，默认'b'，标签在矩形框下。't'为上方，'d'为中间
+#cor_data是之前计算得到的相关性矩阵，method指定了可视化的方式，这里选择了层次聚类；
+corrplot(cor_data, method = 'square', diag = FALSE, order = 'hclust',   
+         addrect = 5, 
+         rect.col = 'black', 
+         rect.lwd = 3, 
+         tl.pos = 't',
+         tl.cex=1)
+
+# code_#10 基因表达数据的PCA主成分聚类分析
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+
+# 读取 Excel 文件
+df = pd.read_excel("", sheet_name="")
+
+# 获取数据
+labels = df.iloc[:, 1]  # 第二列是基因名
+data = df.iloc[:, 2:].values  # 第三列及之后是数据
+
+# 通过 PCA 对数据进行降维
+pca = PCA(n_components=5)
+pca_result = pca.fit_transform(data)
+
+# 聚类
+kmeans = KMeans(n_clusters=3)
+kmeans_result = kmeans.fit_predict(pca_result)
+
+# 获取每个主成分的方差比例
+var_ratio = pca.explained_variance_ratio_
+
+# 绘制聚类图像
+plt.figure(figsize=(10, 10))
+for i in range(3):
+    cluster_points = pca_result[kmeans_result == i]
+    plt.scatter(cluster_points[:, 0], cluster_points[:, 1], c='C'+str(i), s=20, alpha=0.7, label=f'Cluster {i+1}')
+
+# 绘制聚类边界
+for i in range(3):
+    cluster_points = pca_result[kmeans_result == i]
+    centroid = kmeans.cluster_centers_[i]
+    plt.plot(cluster_points[:, 0], cluster_points[:, 1], 'k.', markersize=1, alpha=0.2)
+    plt.plot([centroid[0]], [centroid[1]], 'ko', markersize=10, alpha=1)
+
+# 强调特定基因
+emphasis_indices = np.where(df.iloc[:, 0] == 1)[0]
+for index in emphasis_indices:
+    x_offset = 0.21 if index % 2 == 0 else -0.21
+    y_offset = 0.21 if index % 4 < 2 else -0.21
+    plt.annotate(labels[index], (pca_result[index, 0], pca_result[index, 1]+y_offset), fontsize=6, color='red')
+
+plt.xlabel("PC1: %.2f%%" % (var_ratio[0] * 100))
+
+plt.xlabel("PC1: %.2f%%" % (var_ratio[0] * 100))
+plt.ylabel("PC2: %.2f%%" % (var_ratio[1] * 100))
+plt.title("PCA Cluster")
+plt.legend()
+plt.savefig('\\PCA_cluster.png', format='png', dpi=300)
+
+# 对聚类结果进行分析，统计每个类别的样本数
+class_count = {}
+for i in range(3):
+    class_count[i] = (kmeans_result == i).sum()
+print(class_count)
+
+
+
+# 将聚类结果写入 Excel 文件
+writer = pd.ExcelWriter('\\cluster_results.xlsx')
+for i in range(kmeans.n_clusters):
+    # 获取每个类别中的基因名
+    genes_in_cluster = labels[kmeans_result == i]
+    # 将基因名转换为 DataFrame 对象
+    genes_df = pd.DataFrame(genes_in_cluster, columns=['Genes in Cluster'])
+    # 将 DataFrame 写入 Excel 文件中的不同 sheet
+    genes_df.to_excel(writer, sheet_name=f'Cluster {i+1}')
+writer.save()
 
