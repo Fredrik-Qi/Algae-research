@@ -1,3 +1,3 @@
 # Phenotypic Quantification and Clustering Analysis of Chlamydomonas reinhardtii Mutants
 Zhejiang University 
-Graduation Thesis Supplementary Materials
+Bachelor thesis Thesis Supplementary Materials
